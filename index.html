@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekap Gaji Bulanan - Ayub R 2026</title>
-    <!-- Library untuk konversi HTML ke DOCX via FileSaver -->
     <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
     <style>
         :root {
@@ -200,7 +199,6 @@
                 <h1>Rekap Pencatatan Gaji Bulanan</h1>
                 <p style="color: #64748b; font-size: 0.9rem;">Kelola finansial dan keperluan alokasi dana</p>
             </div>
-            <!-- Pilihan Bulan -->
             <div class="form-group" style="min-width: 150px;">
                 <select id="bulan-pilihan" onchange="gantiBulan()">
                     <option value="Januari">Januari</option>
@@ -219,7 +217,6 @@
             </div>
         </header>
 
-        <!-- Input Gaji Utama -->
         <div class="form-section" style="background: #eff6ff; border-color: #bfdbfe;">
             <div class="form-row" style="grid-template-columns: 1fr auto;">
                 <div class="form-group">
@@ -230,7 +227,6 @@
             </div>
         </div>
 
-        <!-- Ringkasan Finansial -->
         <div class="summary-cards">
             <div class="card">
                 <div class="card-title">Total Pendapatan</div>
@@ -246,25 +242,21 @@
             </div>
         </div>
 
-        <!-- Tabel Data Rincian Keperluan -->
         <div class="table-container">
             <table id="tabel-rekap">
                 <thead>
                     <tr id="header-row">
                         <th>Keperluan / Alokasi</th>
                         <th>Nominal (Rp)</th>
-                        <th>Kategori</th>
                         <th class="no-doc">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="body-rekap">
-                    <!-- Data di-generate otomatis oleh JS -->
-                </tbody>
+                    </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Panel Kontrol & Fitur Tambah Kolom/Baris -->
     <div class="form-section">
         <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Tambah Keperluan Baru</h3>
         <div class="form-row">
@@ -276,23 +268,12 @@
                 <label for="input-nominal">Nominal (Rp)</label>
                 <input type="number" id="input-nominal" placeholder="Contoh: 150000">
             </div>
-            <!-- Container Utama Input Dinamis -->
-            <div class="form-group" style="display: contents;" id="dynamic-inputs-container">
-                <div class="form-group">
-                    <label for="input-kategori">Kategori</label>
-                    <input type="text" id="input-kategori" placeholder="Contoh: Rutin / Investasi">
-                </div>
-            </div>
             <button class="btn-primary" onclick="tambahBaris()">Tambah</button>
         </div>
     </div>
 
-    <!-- Fitur Tambah Struktur Kolom Baru & Ekspor -->
     <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: space-between; margin-top: 1rem;">
-        <div style="display: flex; gap: 0.5rem;">
-            <button class="btn-success" onclick="tambahKolomStruktur()">+ Tambah Kolom Struktur Baru</button>
-            <button class="btn-danger" style="background-color: #64748b;" onclick="resetSemuaData()">Reset Semua Data</button>
-        </div>
+        <button class="btn-danger" style="background-color: #64748b;" onclick="resetSemuaData()">Reset Semua Data</button>
         <button class="btn-primary" style="background-color: #0f172a;" onclick="eksporDOCX()">Ekspor ke Word (.docx)</button>
     </div>
 
@@ -300,16 +281,14 @@
 </div>
 
 <script>
-    // Database Default awal jika localStorage masih kosong bersih
+    // Database Default awal (Hanya 2 kolom utama)
     const dataAwalDefault = [
-        { id: 1, nama: "Angsuran & Tagihan", nominal: 1200000, kategori: "Wajib" },
-        { id: 2, nama: "Belanja Bulanan", nominal: 800000, kategori: "Kebutuhan" },
-        { id: 3, nama: "Investasi / Tabungan", nominal: 500000, kategori: "Investasi" }
+        { id: 1, nama: "Angsuran & Tagihan", nominal: 1200000 },
+        { id: 2, nama: "Belanja Bulanan", nominal: 800000 }
     ];
 
-    // Mengambil data dari localStorage atau gunakan default jika belum ada
+    // Mengambil data dari localStorage
     let dataKeperluan = JSON.parse(localStorage.getItem("rekap_data_keperluan")) || dataAwalDefault;
-    let kolomKustom = JSON.parse(localStorage.getItem("rekap_kolom_kustom")) || [];
     let gajiDisimpan = localStorage.getItem("rekap_total_gaji") || "5000000";
     let bulanDisimpan = localStorage.getItem("rekap_bulan_pilihan") || "Mei";
 
@@ -317,16 +296,8 @@
         document.getElementById("gaji-pokok").value = gajiDisimpan;
         document.getElementById("bulan-pilihan").value = bulanDisimpan;
         
-        if (kolomKustom.length > 0) {
-            const headerRow = document.getElementById("header-row");
-            kolomKustom.forEach(kolom => {
-                const th = document.createElement("th");
-                th.innerText = kolom;
-                headerRow.insertBefore(th, headerRow.lastElementChild);
-                tambahFieldInputBaruDOM(kolom);
-            });
-        }
-        
+        // Langsung jalankan hitung keuangan di awal muat halaman
+        hitungKeuangan();
         renderTabel();
     };
 
@@ -340,18 +311,12 @@
             tr.innerHTML = `
                 <td contenteditable="true" onblur="updateData(${item.id}, 'nama', this.innerText)">${item.nama}</td>
                 <td contenteditable="true" style="font-weight: 600;" onblur="updateData(${item.id}, 'nominal', this.innerText, true)">${item.nominal}</td>
-                <td contenteditable="true" onblur="updateData(${item.id}, 'kategori', this.innerText)">${item.kategori || '-'}</td>
-                ${kolomKustom.map(kolom => `
-                    <td contenteditable="true" onblur="updateData(${item.id}, '${kolom}', this.innerText)">${item[kolom] || '-'}</td>
-                `).join('')}
                 <td class="actions-cell no-doc">
                     <button class="btn-danger btn-sm" onclick="hapusBaris(${item.id})">Hapus</button>
                 </td>
             `;
             tbody.appendChild(tr);
         });
-
-        hitungKeuangan();
     }
 
     function updateData(id, field, value, isNumber = false) {
@@ -368,6 +333,7 @@
         }
     }
 
+    // Fungsi perbaikan: Memaksa widget "Total Pendapatan" & "Sisa" langsung ter-update seketika saat angka di-input
     function simpanGajiDanHitung() {
         const gajiInput = document.getElementById("gaji-pokok").value;
         localStorage.setItem("rekap_total_gaji", gajiInput);
@@ -381,6 +347,7 @@
         let totalKeperluan = dataKeperluan.reduce((sum, item) => sum + Number(item.nominal), 0);
         let sisaSaldo = totalGaji - totalKeperluan;
 
+        // Pasang teks ke elemen ringkasan widget box
         document.getElementById("view-pendapatan").innerText = formatRupiah(totalGaji);
         document.getElementById("view-keperluan").innerText = formatRupiah(totalKeperluan);
         
@@ -397,7 +364,6 @@
     function tambahBaris() {
         const nama = document.getElementById("input-nama").value;
         const nominal = document.getElementById("input-nominal").value;
-        const kategori = document.getElementById("input-kategori").value;
 
         if (!nama || !nominal) {
             alert("Nama keperluan dan nominal wajib diisi!");
@@ -407,27 +373,16 @@
         let itemBaru = {
             id: Date.now(),
             nama: nama,
-            nominal: Number(nominal),
-            kategori: kategori || "Rutin"
+            nominal: Number(nominal)
         };
-
-        kolomKustom.forEach(kolom => {
-            const inputKustomVal = document.getElementById(`input-kustom-${kolom}`)?.value;
-            itemBaru[kolom] = inputKustomVal || "-";
-        });
 
         dataKeperluan.push(itemBaru);
         saveToStorage();
         renderTabel();
+        hitungKeuangan();
 
         document.getElementById("input-nama").value = "";
         document.getElementById("input-nominal").value = "";
-        document.getElementById("input-kategori").value = "";
-        kolomKustom.forEach(kolom => {
-            if(document.getElementById(`input-kustom-${kolom}`)) {
-                document.getElementById(`input-kustom-${kolom}`).value = "";
-            }
-        });
     }
 
     function hapusBaris(id) {
@@ -435,47 +390,8 @@
             dataKeperluan = dataKeperluan.filter(item => item.id !== id);
             saveToStorage();
             renderTabel();
+            hitungKeuangan();
         }
-    }
-
-    function tambahKolomStruktur() {
-        let namaKolomBaru = prompt("Masukkan nama kolom struktur baru:\n(Contoh: Batas Waktu, Keterangan, Urgensi)");
-        
-        if (namaKolomBaru && namaKolomBaru.trim() !== "") {
-            let namaClean = namaKolomBaru.trim();
-            
-            if(kolomKustom.includes(namaClean)) {
-                alert("Kolom dengan nama tersebut sudah ada!");
-                return;
-            }
-
-            kolomKustom.push(namaClean);
-            localStorage.setItem("rekap_kolom_kustom", JSON.stringify(kolomKustom));
-
-            const headerRow = document.getElementById("header-row");
-            const th = document.createElement("th");
-            th.innerText = namaClean;
-            headerRow.insertBefore(th, headerRow.lastElementChild);
-
-            tambahFieldInputBaruDOM(namaClean);
-
-            dataKeperluan.forEach(item => {
-                if(!item[namaClean]) item[namaClean] = "-";
-            });
-            saveToStorage();
-            renderTabel();
-        }
-    }
-
-    function tambahFieldInputBaruDOM(namaKolom) {
-        const formContainer = document.getElementById("dynamic-inputs-container");
-        const newGroup = document.createElement("div");
-        newGroup.className = "form-group";
-        newGroup.innerHTML = `
-            <label>${namaKolom}</label>
-            <input type="text" id="input-kustom-${namaKolom}" placeholder="Isi ${namaKolom}">
-        `;
-        formContainer.appendChild(newGroup);
     }
 
     function gantiBulan() {
@@ -498,7 +414,6 @@
         return "Rp " + angka.toLocaleString("id-ID");
     }
 
-    // Fungsi Inti Baru: Ekspor ke bentuk File Dokumen Word (.docx)
     function eksporDOCX() {
         const bulanText = document.getElementById("bulan-pilihan").value;
         const totalGaji = document.getElementById("gaji-pokok").value;
@@ -506,7 +421,6 @@
         let totalKeperluan = dataKeperluan.reduce((sum, item) => sum + Number(item.nominal), 0);
         let sisaSaldo = totalGaji - totalKeperluan;
 
-        // Menyusun CSS inline dasar agar tabel di Microsoft Word memiliki border yang rapi saat dibuka
         let gayaTabelWord = `
             <style>
                 table { width: 100%; border-collapse: collapse; margin-top: 20px; font-family: Arial, sans-serif; }
@@ -516,7 +430,6 @@
             </style>
         `;
 
-        // Membuat template dokumen HTML khusus isi konten Word
         let kontenHtml = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
             <head>
@@ -536,8 +449,6 @@
                         <tr>
                             <th>Keperluan / Alokasi</th>
                             <th>Nominal</th>
-                            <th>Kategori</th>
-                            ${kolomKustom.map(kolom => `<th>${kolom}</th>`).join('')}
                         </tr>
                     </thead>
                     <tbody>
@@ -545,7 +456,26 @@
                             <tr>
                                 <td>${item.nama}</td>
                                 <td class="text-bold">Rp ${Number(item.nominal).toLocaleString("id-ID")}</td>
-                                <td>${item.kategori || '-'}</td>
-                                ${kolomKustom.map(kolom => `<td>${item[kolom] || '-'}</td>`).join('')}
                             </tr>
-                        `).join
+                        `).join('')}
+                    </tbody>
+                </table>
+                <br/>
+                <p style="font-size:11px; color:#999999;">Ekspor otomatis sistem - dibuat pada tahun 2026</p>
+            </body>
+            </html>
+        `;
+
+        let converted = htmlDocx.asBlob(kontenHtml);
+        
+        let linkUnduh = document.createElement('a');
+        linkUnduh.href = URL.createObjectURL(converted);
+        linkUnduh.download = `Rekap_Gaji_${bulanText}_2026.docx`;
+        document.body.appendChild(linkUnduh);
+        linkUnduh.click();
+        document.body.removeChild(linkUnduh);
+    }
+</script>
+
+</body>
+</html>
