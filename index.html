@@ -4,14 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekap Gaji Bulanan - Ayub R 2026</title>
-    <script src="https://cdn.jsdelivr.net/gh/evidenceprime/html-docx-js@master/dist/html-docx.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
             --success: #16a34a;
             --danger: #dc2626;
-            --danger-hover: #b91c1c;
             --background: #f8fafc;
             --text: #1e293b;
             --border: #e2e8f0;
@@ -36,7 +35,7 @@
             background: white;
             padding: 2rem;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
 
         header {
@@ -53,7 +52,6 @@
             color: #0f172a;
         }
 
-        /* Ringkasan Keuangan */
         .summary-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -74,7 +72,6 @@
         .card-title {
             font-size: 0.875rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
             color: #64748b;
             margin-bottom: 0.5rem;
         }
@@ -84,7 +81,6 @@
             font-weight: bold;
         }
 
-        /* Form Tambah Pengeluaran */
         .form-section {
             background: #f8fafc;
             padding: 1.5rem;
@@ -117,7 +113,6 @@
             border-radius: 6px;
             font-size: 1rem;
             outline: none;
-            transition: border-color 0.2s;
         }
 
         input:focus, select:focus {
@@ -130,10 +125,8 @@
             border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
+            transition: background-color 0.2s;
         }
-
-        button:active { transform: scale(0.98); }
 
         .btn-primary { background-color: var(--primary); color: white; }
         .btn-primary:hover { background-color: var(--primary-hover); }
@@ -141,10 +134,9 @@
         .btn-success { background-color: var(--success); color: white; }
         .btn-success:hover { background: #15803d; }
 
-        .btn-danger { background-color: var(--danger); color: white; }
-        .btn-danger:hover { background-color: var(--danger-hover); }
+        .btn-danger { background-color: #64748b; color: white; }
+        .btn-danger:hover { background-color: #475569; }
 
-        /* Tabel Data */
         .table-container {
             overflow-x: auto;
             margin-bottom: 1.5rem;
@@ -166,95 +158,76 @@
             font-weight: 600;
         }
 
-        .actions-cell {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-            border-radius: 4px;
-        }
-
         .footer-credit {
             text-align: center;
             margin-top: 2rem;
             font-size: 0.85rem;
             color: #94a3b8;
         }
-
-        /* Area Cetak Khusus */
-        #cetak-area {
-            padding: 10px;
-        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="cetak-area">
-        <header>
-            <div>
-                <h1>Rekap Pencatatan Gaji Bulanan</h1>
-                <p style="color: #64748b; font-size: 0.9rem;">Kelola finansial dan keperluan alokasi dana</p>
-            </div>
-            <div class="form-group" style="min-width: 150px;">
-                <select id="bulan-pilihan" onchange="gantiBulan()">
-                    <option value="Januari">Januari</option>
-                    <option value="Februari">Februari</option>
-                    <option value="Maret">Maret</option>
-                    <option value="April">April</option>
-                    <option value="Mei" selected>Mei</option>
-                    <option value="Juni">Juni</option>
-                    <option value="Juli">Juli</option>
-                    <option value="Agustus">Agustus</option>
-                    <option value="September">September</option>
-                    <option value="Oktober">Oktober</option>
-                    <option value="November">November</option>
-                    <option value="Desember">Desember</option>
-                </select>
-            </div>
-        </header>
+    <header>
+        <div>
+            <h1>Rekap Pencatatan Gaji Bulanan</h1>
+            <p style="color: #64748b; font-size: 0.9rem;">Kelola finansial dan keperluan alokasi dana</p>
+        </div>
+        <div class="form-group" style="min-width: 150px;">
+            <select id="bulan-pilihan" onchange="gantiBulan()">
+                <option value="Januari">Januari</option>
+                <option value="Februari">Februari</option>
+                <option value="Maret">Maret</option>
+                <option value="April">April</option>
+                <option value="Mei" selected>Mei</option>
+                <option value="Juni">Juni</option>
+                <option value="Juli">Juli</option>
+                <option value="Agustus">Agustus</option>
+                <option value="September">September</option>
+                <option value="Oktober">Oktober</option>
+                <option value="November">November</option>
+                <option value="Desember">Desember</option>
+            </select>
+        </div>
+    </header>
 
-        <div class="form-section" style="background: #eff6ff; border-color: #bfdbfe;">
-            <div class="form-row" style="grid-template-columns: 1fr auto;">
-                <div class="form-group">
-                    <label for="gaji-pokok">Total Gaji Bulan Ini (Rp)</label>
-                    <input type="number" id="gaji-pokok" value="5000000" oninput="simpanGajiDanHitung()" placeholder="Masukkan total gaji">
-                </div>
-                <div></div>
+    <div class="form-section" style="background: #eff6ff; border-color: #bfdbfe;">
+        <div class="form-row" style="grid-template-columns: 1fr;">
+            <div class="form-group">
+                <label for="gaji-pokok">Total Gaji Bulan Ini (Rp)</label>
+                <input type="number" id="gaji-pokok" value="5000000" oninput="simpanGajiDanHitung()" placeholder="Masukkan total gaji">
             </div>
         </div>
+    </div>
 
-        <div class="summary-cards">
-            <div class="card">
-                <div class="card-title">Total Pendapatan</div>
-                <div class="card-value" id="view-pendapatan">Rp 0</div>
-            </div>
-            <div class="card danger">
-                <div class="card-title">Total Keperluan</div>
-                <div class="card-value" id="view-keperluan">Rp 0</div>
-            </div>
-            <div class="card success">
-                <div class="card-title">Sisa Saldo (Tabungan)</div>
-                <div class="card-value" id="view-sisa">Rp 0</div>
-            </div>
+    <div class="summary-cards">
+        <div class="card">
+            <div class="card-title">Total Pendapatan</div>
+            <div class="card-value" id="view-pendapatan">Rp 0</div>
         </div>
+        <div class="card danger">
+            <div class="card-title">Total Keperluan</div>
+            <div class="card-value" id="view-keperluan">Rp 0</div>
+        </div>
+        <div class="card success">
+            <div class="card-title">Sisa Saldo (Tabungan)</div>
+            <div class="card-value" id="view-sisa">Rp 0</div>
+        </div>
+    </div>
 
-        <div class="table-container">
-            <table id="tabel-rekap">
-                <thead>
-                    <tr id="header-row">
-                        <th>Keperluan / Alokasi</th>
-                        <th>Nominal (Rp)</th>
-                        <th class="no-doc">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="body-rekap">
-                    </tbody>
-            </table>
-        </div>
+    <div class="table-container">
+        <table id="tabel-rekap">
+            <thead>
+                <tr>
+                    <th>Keperluan / Alokasi</th>
+                    <th>Nominal (Rp)</th>
+                    <th style="width: 80px;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="body-rekap">
+                </tbody>
+        </table>
     </div>
 
     <div class="form-section">
@@ -273,21 +246,19 @@
     </div>
 
     <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: space-between; margin-top: 1rem;">
-        <button class="btn-danger" style="background-color: #64748b;" onclick="resetSemuaData()">Reset Semua Data</button>
-        <button class="btn-primary" style="background-color: #0f172a;" onclick="eksporDOCX()">Ekspor ke Word (.docx)</button>
+        <button class="btn-danger" onclick="resetSemuaData()">Reset Semua Data</button>
+        <button class="btn-success" onclick="eksporExcel()">Ekspor ke Excel (.xlsx)</button>
     </div>
 
     <div class="footer-credit">Made by Ayub R 2026</div>
 </div>
 
 <script>
-    // Database Default awal (Hanya 2 kolom utama)
     const dataAwalDefault = [
         { id: 1, nama: "Angsuran & Tagihan", nominal: 1200000 },
         { id: 2, nama: "Belanja Bulanan", nominal: 800000 }
     ];
 
-    // Mengambil data dari localStorage
     let dataKeperluan = JSON.parse(localStorage.getItem("rekap_data_keperluan")) || dataAwalDefault;
     let gajiDisimpan = localStorage.getItem("rekap_total_gaji") || "5000000";
     let bulanDisimpan = localStorage.getItem("rekap_bulan_pilihan") || "Mei";
@@ -295,8 +266,6 @@
     window.onload = function() {
         document.getElementById("gaji-pokok").value = gajiDisimpan;
         document.getElementById("bulan-pilihan").value = bulanDisimpan;
-        
-        // Langsung jalankan hitung keuangan di awal muat halaman
         hitungKeuangan();
         renderTabel();
     };
@@ -307,12 +276,11 @@
 
         dataKeperluan.forEach((item) => {
             const tr = document.createElement("tr");
-
             tr.innerHTML = `
                 <td contenteditable="true" onblur="updateData(${item.id}, 'nama', this.innerText)">${item.nama}</td>
                 <td contenteditable="true" style="font-weight: 600;" onblur="updateData(${item.id}, 'nominal', this.innerText, true)">${item.nominal}</td>
-                <td class="actions-cell no-doc">
-                    <button class="btn-danger btn-sm" onclick="hapusBaris(${item.id})">Hapus</button>
+                <td>
+                    <button style="padding: 0.25rem 0.5rem; font-size: 0.85rem; background-color:#dc2626; color:white; border-radius:4px;" onclick="hapusBaris(${item.id})">Hapus</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -333,7 +301,6 @@
         }
     }
 
-    // Fungsi perbaikan: Memaksa widget "Total Pendapatan" & "Sisa" langsung ter-update seketika saat angka di-input
     function simpanGajiDanHitung() {
         const gajiInput = document.getElementById("gaji-pokok").value;
         localStorage.setItem("rekap_total_gaji", gajiInput);
@@ -347,7 +314,6 @@
         let totalKeperluan = dataKeperluan.reduce((sum, item) => sum + Number(item.nominal), 0);
         let sisaSaldo = totalGaji - totalKeperluan;
 
-        // Pasang teks ke elemen ringkasan widget box
         document.getElementById("view-pendapatan").innerText = formatRupiah(totalGaji);
         document.getElementById("view-keperluan").innerText = formatRupiah(totalKeperluan);
         
@@ -355,9 +321,9 @@
         sisaElement.innerText = formatRupiah(sisaSaldo);
 
         if (sisaSaldo < 0) {
-            sisaElement.style.color = "var(--danger)";
+            sisaElement.style.color = "#dc2626";
         } else {
-            sisaElement.style.color = "var(--success)";
+            sisaElement.style.color = "#16a34a";
         }
     }
 
@@ -370,13 +336,12 @@
             return;
         }
 
-        let itemBaru = {
+        dataKeperluan.push({
             id: Date.now(),
             nama: nama,
             nominal: Number(nominal)
-        };
-
-        dataKeperluan.push(itemBaru);
+        });
+        
         saveToStorage();
         renderTabel();
         hitungKeuangan();
@@ -386,7 +351,7 @@
     }
 
     function hapusBaris(id) {
-        if(confirm("Apakah kamu yakin ingin menghapus alokasi keperluan ini?")) {
+        if(confirm("Hapus alokasi ini?")) {
             dataKeperluan = dataKeperluan.filter(item => item.id !== id);
             saveToStorage();
             renderTabel();
@@ -404,7 +369,7 @@
     }
 
     function resetSemuaData() {
-        if(confirm("Apakah kamu ingin mereset semua data?")) {
+        if(confirm("Reset semua data keuangan?")) {
             localStorage.clear();
             location.reload();
         }
@@ -414,68 +379,46 @@
         return "Rp " + angka.toLocaleString("id-ID");
     }
 
-    function eksporDOCX() {
+    // FUNGSI UTAMA BARU: EKSPOR EXCEL SEBAGAI DATABASE BULANAN YANG KUAT & BERSIH
+    function eksporExcel() {
         const bulanText = document.getElementById("bulan-pilihan").value;
-        const totalGaji = document.getElementById("gaji-pokok").value;
+        const totalGaji = Number(document.getElementById("gaji-pokok").value) || 0;
         
         let totalKeperluan = dataKeperluan.reduce((sum, item) => sum + Number(item.nominal), 0);
         let sisaSaldo = totalGaji - totalKeperluan;
 
-        let gayaTabelWord = `
-            <style>
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-family: Arial, sans-serif; }
-                th, td { border: 1px solid #cccccc; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; font-weight: bold; }
-                .text-bold { font-weight: bold; }
-            </style>
-        `;
+        // 1. Membuat Susunan Baris Data Excel (Row-by-Row)
+        const barisExcel = [
+            ["REKAP PENCATATAN GAJI BULANAN"],
+            [`Bulan: ${bulanText} 2026`],
+            [], // Baris kosong pembatas
+            ["RINGKASAN KEUANGAN"],
+            ["Total Pendapatan", totalGaji],
+            ["Total Keperluan", totalKeperluan],
+            ["Sisa Saldo (Tabungan)", sisaSaldo],
+            [], // Baris kosong pembatas
+            ["RINCIAN ALOKASI KEPERLUAN"],
+            ["Nama Keperluan / Alokasi", "Nominal (Rupiah)"] // Header tabel excel
+        ];
 
-        let kontenHtml = `
-            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-            <head>
-                <title>Rekap Gaji</title>
-                ${gayaTabelWord}
-            </head>
-            <body>
-                <h2>Rekap Catatan Gaji Bulanan - Bulan ${bulanText} 2026</h2>
-                <hr/>
-                <p><b>Total Pendapatan:</b> Rp ${Number(totalGaji).toLocaleString("id-ID")}</p>
-                <p><b>Total Keperluan:</b> Rp ${totalKeperluan.toLocaleString("id-ID")}</p>
-                <p><b>Sisa Saldo (Tabungan):</b> Rp ${sisaSaldo.toLocaleString("id-ID")}</p>
-                <br/>
-                <h3>Rincian Alokasi Dana</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Keperluan / Alokasi</th>
-                            <th>Nominal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${dataKeperluan.map(item => `
-                            <tr>
-                                <td>${item.nama}</td>
-                                <td class="text-bold">Rp ${Number(item.nominal).toLocaleString("id-ID")}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                <br/>
-                <p style="font-size:11px; color:#999999;">Ekspor otomatis sistem - dibuat pada tahun 2026</p>
-            </body>
-            </html>
-        `;
+        // 2. Memasukkan seluruh data dari tabel web ke baris Excel
+        dataKeperluan.forEach(item => {
+            barisExcel.push([item.nama, item.nominal]);
+        });
 
-        let converted = htmlDocx.asBlob(kontenHtml);
-        
-        let linkUnduh = document.createElement('a');
-        linkUnduh.href = URL.createObjectURL(converted);
-        linkUnduh.download = `Rekap_Gaji_${bulanText}_2026.docx`;
-        document.body.appendChild(linkUnduh);
-        linkUnduh.click();
-        document.body.removeChild(linkUnduh);
+        // 3. Proses konversi array data menjadi lembar kerja Excel (Worksheet)
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(barisExcel);
+
+        // 4. Format Lebar Kolom otomatis agar teks tidak terpotong (Kolom A & B)
+        ws['!cols'] = [{ wch: 30 }, { wch: 20 }];
+
+        // 5. Masukkan lembar data ke file book dan unduh langsung (.xlsx)
+        XLSX.utils.book_append_sheet(wb, ws, `Rekap ${bulanText}`);
+        XLSX.writeFile(wb, `Rekap_Gaji_${bulanText}_2026.xlsx`);
     }
 </script>
 
 </body>
 </html>
+
